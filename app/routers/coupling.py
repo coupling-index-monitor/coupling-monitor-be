@@ -1,9 +1,15 @@
 from fastapi import APIRouter
 from typing import Optional
 from fastapi import Query
-from app.services.graph_processor import (get_graph_data_as_json)
-from app.services.coupling_metrics_calculator import (
-    calculate_ais, calculate_all_ais, calculate_ads, calculate_all_ads, calculate_adcs, calculate_scf)
+from app.services import (
+    calculate_ais, 
+    calculate_all_ais, 
+    calculate_ads, 
+    calculate_all_ads, 
+    calculate_adcs, 
+    calculate_scf,
+    get_graph_data_as_json
+)
 
 router = APIRouter()
 

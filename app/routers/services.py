@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 
 from app.services.db_service import get_active_services_of_jaeger
 from app.services.graph_processor import fetch_unique_services_from_neo4j

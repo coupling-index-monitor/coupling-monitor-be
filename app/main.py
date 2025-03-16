@@ -1,11 +1,28 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.database import db_manager
-# from app.core.scheduler import start_scheduler, stop_scheduler
-from app.routers import traces_router, graphs_router, services_router, coupling_router
+from app.routers import graphs_router, services_router, coupling_router
 
-app = FastAPI(title="Graph Generator")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("Starting up: ")
+    print("Initializing database connections...")
+    db_manager.initialize_neo4j()
+    
+    print("\nAvailable API Endpoints:")
+    for route in app.router.routes:
+        methods = ", ".join(route.methods)
+        print(f"{methods} - {route.path}")
+    
+    yield 
+
+    print("Shutting down: ")
+    print("Closing database connections...")
+    db_manager.close_neo4j()
+
+app = FastAPI(title="Coupling Monitor API", version="0.1.0", lifespan=lifespan)
 
 # Add CORS middleware
 app.add_middleware(
@@ -17,28 +34,10 @@ app.add_middleware(
 )
 
 # Include API routers
-app.include_router(traces_router, prefix="/api/traces", tags=["Traces"])
 app.include_router(graphs_router, prefix="/api/graphs", tags=["Graphs"])
 app.include_router(services_router, prefix="/api/services", tags=["Graphs"])
 app.include_router(coupling_router, prefix="/api/coupling", tags=["Coupling"])
 
-
-@app.on_event("startup")
-async def startup():
-    print("Starting up: Initializing database connection...")
-    await db_manager.initialize_mongo()
-    db_manager.initialize_neo4j()
-    # start_scheduler()
-
-
-# @app.on_event("shutdown")
-# async def shutdown():
-#     print("Shutting down: Closing database connection...")
-#     await db_manager.close_mongo()
-#     db_manager.close_neo4j()
-#     # stop_scheduler()
-
-
 @app.get("/")
 async def root():
-    return {"message": "Graph Generator API is running"}
+    return {"message": "Coupling Monitor API is running"}
