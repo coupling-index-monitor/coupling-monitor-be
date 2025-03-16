@@ -2,7 +2,7 @@ import networkx as nx
 from networkx.readwrite import json_graph
 from app.utils.constants import WEIGHT_TYPES
 
-def generate_graph_with_edge_weights(traces, edge_weight_type):
+def generate_graph_with_edge_weights(traces, edge_weight_type=WEIGHT_TYPES.CoExecution.value):
     """
     Generate a weighted dependency graph from new traces with co-execution edge weights.
     """

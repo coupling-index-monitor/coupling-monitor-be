@@ -1,0 +1,97 @@
+{
+  "status": "success",
+  "message": "Weighted Dependency graph generated successfully.",
+  "weight_type": "Latency",
+  "gap_time": "4 hours, 59 minutes and 59 seconds",
+  "data": {
+    "directed": true,
+    "multigraph": false,
+    "graph": {},
+    "nodes": [
+      { "absolute_importance": 0, "absolute_dependence": 1, "id": "service-j" },
+      { "absolute_importance": 2, "absolute_dependence": 0, "id": "service-i" },
+      { "absolute_importance": 0, "absolute_dependence": 1, "id": "service-a" },
+      { "absolute_importance": 2, "absolute_dependence": 1, "id": "service-b" },
+      { "absolute_importance": 1, "absolute_dependence": 1, "id": "service-e" },
+      { "absolute_importance": 1, "absolute_dependence": 1, "id": "service-f" },
+      { "absolute_importance": 1, "absolute_dependence": 0, "id": "service-g" },
+      { "absolute_importance": 0, "absolute_dependence": 1, "id": "service-c" },
+      { "absolute_importance": 1, "absolute_dependence": 3, "id": "service-d" },
+      { "absolute_importance": 1, "absolute_dependence": 0, "id": "service-h" }
+    ],
+    "edges": [
+      {
+        "weight": 2.264,
+        "latency(ms)": 2.264,
+        "frequency": 5,
+        "co_execution": 0.3333,
+        "source": "service-j",
+        "target": "service-i"
+      },
+      {
+        "weight": 10.07,
+        "latency(ms)": 10.07,
+        "frequency": 3,
+        "co_execution": 0.3333,
+        "source": "service-a",
+        "target": "service-b"
+      },
+      {
+        "weight": 2.3874,
+        "latency(ms)": 2.3874,
+        "frequency": 5,
+        "co_execution": 0.5,
+        "source": "service-b",
+        "target": "service-e"
+      },
+      {
+        "weight": 10.217,
+        "latency(ms)": 10.217,
+        "frequency": 2,
+        "co_execution": 0.125,
+        "source": "service-e",
+        "target": "service-d"
+      },
+      {
+        "weight": 3.5776,
+        "latency(ms)": 3.5776,
+        "frequency": 5,
+        "co_execution": 1.0,
+        "source": "service-f",
+        "target": "service-g"
+      },
+      {
+        "weight": 18.192,
+        "latency(ms)": 18.192,
+        "frequency": 3,
+        "co_execution": 0.5,
+        "source": "service-c",
+        "target": "service-f"
+      },
+      {
+        "weight": 2.066,
+        "latency(ms)": 2.066,
+        "frequency": 2,
+        "co_execution": 0.125,
+        "source": "service-d",
+        "target": "service-b"
+      },
+      {
+        "weight": 2.3505,
+        "latency(ms)": 2.3505,
+        "frequency": 4,
+        "co_execution": 0.2857,
+        "source": "service-d",
+        "target": "service-i"
+      },
+      {
+        "weight": 4.908,
+        "latency(ms)": 4.908,
+        "frequency": 4,
+        "co_execution": 0.3333,
+        "source": "service-d",
+        "target": "service-h"
+      }
+    ]
+  }
+}

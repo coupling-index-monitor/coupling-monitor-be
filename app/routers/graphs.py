@@ -79,13 +79,30 @@ async def fetch_dependency_graph():
         return JSONResponse(status_code=500, content= {"status": "error", "message": f"Failed to fetch graph: {str(e)}"})
 
 @router.post("/save")
-async def save_graph(request: Request):
+async def save_graph():
     """
     Endpoint to save the dependency graph to Neo4j.
     """
     try:
-        data = await request.json()
-        id = save_graph_to_neo4j(data["graph_data"], data["graph_id"])
+        end_time = int(datetime.timestamp(datetime.now()) * 1000 * 1000)
+        start_time = int(end_time - 15 * 60 * 1000 * 1000)
+
+        traces = get_traces_from_files_within_timerange(start_time, end_time)
+        if not traces:
+            return {"status": "success", "message": "No traces to process."}
+
+        graph_data = generate_graph_with_edge_weights(traces)
+        data = {
+            "graph_id": end_time,
+            "graph_data": { 
+                "data": {
+                    "nodes": graph_data["nodes"],
+                    "edges": graph_data["edges"]
+                } 
+            },
+        }
+        id = save_graph_to_neo4j(data["graph_data"], start_time, end_time)
+
         return {"status": "success", "message": "Graph saved successfully.", "graph_id": id}
     except Exception as e:
         print(f"ERROR: Failed to generate weighted graph: {str(e)}")

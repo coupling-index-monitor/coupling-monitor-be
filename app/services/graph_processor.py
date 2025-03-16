@@ -65,10 +65,10 @@ def get_graph_data_as_json():
     return json_graph.node_link_data(graph)
 
 
-def save_graph_to_neo4j(graph_data, graph_id):
+def save_graph_to_neo4j(graph_data, startTime, endTime):
     """Saves multiple graphs in Neo4j using graph_id (timestamp/version)."""
-    if graph_id is None:
-        graph_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    if endTime is None or startTime is None:
+        raise ValueError("Start and End time must be provided.")
 
     with db_manager.neo4j_driver.session() as session:
         for node in graph_data["data"]["nodes"]:
@@ -80,9 +80,11 @@ def save_graph_to_neo4j(graph_data, graph_id):
                     s.last_updated = datetime()
                 """,
                 id=node["id"],
-                graph_id=graph_id,
+                graph_id=endTime,
                 absolute_importance=node["absolute_importance"],
-                absolute_dependence=node["absolute_dependence"]
+                absolute_dependence=node["absolute_dependence"],
+                startTime=startTime,
+                endTime=endTime
             )
 
         # Insert Edges with graph_id
@@ -98,14 +100,16 @@ def save_graph_to_neo4j(graph_data, graph_id):
                 """,
                 source=edge["source"],
                 target=edge["target"],
-                graph_id=graph_id,
+                graph_id=endTime,
                 latency=edge["latency(ms)"],
                 frequency=edge["frequency"],
-                co_execution=edge["co_execution"]
+                co_execution=edge["co_execution"],
+                startTime=startTime,
+                endTime=endTime
             )
 
-    print(f"Graph {graph_id} saved to Neo4j successfully.")
-    return graph_id
+    print(f"Graph {endTime} saved to Neo4j successfully.")
+    return endTime
 
 def retrieve_graph_by_id(id):
     """Retrieves a specific graph snapshot using graph_id."""

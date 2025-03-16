@@ -54,11 +54,9 @@ def get_traces(start_time, end_time):
 
             all_traces.extend(traces)
 
-            # Sort traces by startTime in ascending order
-            traces.sort(key=lambda trace: trace["spans"][0]["startTime"])
-
             # Update the new start time to the last retrieved trace's startTime
-            current_start_time = traces[-1]["spans"][0]["startTime"]
+            last_start_time = max(span["startTime"] for trace in traces for span in trace["spans"])
+            current_start_time = last_start_time + 1
 
             if len(traces) < TRACE_LIMIT:
                 log(f"Fetched {len(traces)} traces (less than {TRACE_LIMIT}). Stopping pagination.")
@@ -84,9 +82,9 @@ def write_traces(traces):
     traces.sort(key=lambda trace: trace["spans"][0]["startTime"])
 
     # Get the last trace's startTime and traceID
-    first_start_time = traces[0]["spans"][0]["startTime"]
+    first_start_time = (min(span["startTime"] for span in traces[0]["spans"]))
+    last_start_time = (max(span["startTime"] for span in traces[- 1]["spans"]))
     last_trace = traces[-1]
-    last_start_time = last_trace["spans"][0]["startTime"]
     last_trace_id = last_trace["traceID"]
 
     # Save traces in a file named after the last trace's startTime
@@ -101,7 +99,7 @@ def write_traces(traces):
     if os.path.exists(OFFSET_FILE):
         try:
             with open(OFFSET_FILE, 'r') as offset_file:
-                offset_data = json.load(offset_file)  # Handle JSON decode errors
+                offset_data = json.load(offset_file) 
         except json.JSONDecodeError:
             print(f"Warning: {OFFSET_FILE} contains invalid JSON. Using an empty dictionary.")
             offset_data = {}

@@ -11,11 +11,6 @@ async def lifespan(app: FastAPI):
     print("Initializing database connections...")
     db_manager.initialize_neo4j()
     
-    print("\nAvailable API Endpoints:")
-    for route in app.router.routes:
-        methods = ", ".join(route.methods)
-        print(f"{methods} - {route.path}")
-    
     yield 
 
     print("Shutting down: ")
