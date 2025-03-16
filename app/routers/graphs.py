@@ -9,6 +9,7 @@ from app.services import (
     save_graph_to_neo4j,
     retrieve_graph_by_id,
     get_all_graph_versions,
+    get_change_points
 )
 from app.utils import WEIGHT_TYPES, get_gap_time_str
 
@@ -74,7 +75,8 @@ async def fetch_dependency_graph():
         graph_data = get_graph_data_as_json()
         return {"status": "success", "graph": graph_data}
     except Exception as e:
-        return {"status": "error", "message": f"Failed to fetch graph: {str(e)}"}
+        print(f"ERROR: Failed to generate weighted graph: {str(e)}")
+        return JSONResponse(status_code=500, content= {"status": "error", "message": f"Failed to fetch graph: {str(e)}"})
 
 @router.post("/save")
 async def save_graph(request: Request):
@@ -86,7 +88,8 @@ async def save_graph(request: Request):
         id = save_graph_to_neo4j(data["graph_data"], data["graph_id"])
         return {"status": "success", "message": "Graph saved successfully.", "graph_id": id}
     except Exception as e:
-        return {"status": "error", "message": f"Failed to save graph: {str(e)}"}
+        print(f"ERROR: Failed to generate weighted graph: {str(e)}")
+        return JSONResponse(status_code=500, content= {"status": "error", "message": f"Failed to save graph: {str(e)}"})
     
 @router.get("/retrieve")
 async def retrieve_graph(graph_id = None):
@@ -98,7 +101,8 @@ async def retrieve_graph(graph_id = None):
         print(f"Retrieved graph with {len(graph_data['nodes'])} nodes")
         return {"status": "success", "graph": graph_data}
     except Exception as e:
-        return {"status": "error", "message": f"Failed to retrieve graph: {str(e)}"}
+        print(f"ERROR: Failed to generate weighted graph: {str(e)}")
+        return JSONResponse(status_code=500, content= {"status": "error", "message": f"Failed to retrieve graph: {str(e)}"})
     
 @router.get("/versions")
 async def get_graph_versions():
@@ -109,4 +113,30 @@ async def get_graph_versions():
         graph_versions = get_all_graph_versions()
         return {"status": "success", "versions": graph_versions}
     except Exception as e:
-        return {"status": "error", "message": f"Failed to fetch graph versions: {str(e)}"}
+        print(f"ERROR: Failed to generate weighted graph: {str(e)}")
+        return JSONResponse(status_code=500, content= {"status": "error", "message": f"Failed to fetch graph versions: {str(e)}"})
+    
+@router.get("/change-points")
+async def detect_change_points(start_time: int = 0, end_time: int = 0):
+    """
+    Endpoint to detect change points in the time-series data.
+    """
+    try:
+        if start_time != 0 and end_time != 0 and start_time >= end_time:
+            return JSONResponse(status_code=400, content={
+                "status": "error", 
+                "message": "Invalid time range. start_time must be less than end_time."
+            })
+        if start_time == 0:
+            start_time = int((datetime.now() - timedelta(hours=24)).timestamp() * 1_000_000)
+        if end_time == 0:
+            end_time = int(datetime.now().timestamp() * 1_000_000)
+
+        print(f"Detecting change points with start_time={datetime.fromtimestamp(start_time / 1_000_000)}, end_time={datetime.fromtimestamp(end_time / 1_000_000)}")
+
+
+        # change_points = get_change_points()
+        return {"status": "success", "change_points": None}
+    except Exception as e:
+        print(f"ERROR: Failed to generate weighted graph: {str(e)}")
+        return JSONResponse(status_code=500, content= {"status": "error", "message": f"Failed to detect change points: {str(e)}"})
