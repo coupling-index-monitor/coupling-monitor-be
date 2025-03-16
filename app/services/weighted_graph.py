@@ -2,7 +2,7 @@ import networkx as nx
 from networkx.readwrite import json_graph
 from app.utils.constants import WEIGHT_TYPES
 
-def generate_graph_with_edge_weights(traces, wedge_weight_type):
+def generate_graph_with_edge_weights(traces, edge_weight_type):
     """
     Generate a weighted dependency graph from new traces with co-execution edge weights.
     """
@@ -47,8 +47,8 @@ def generate_graph_with_edge_weights(traces, wedge_weight_type):
                         else:
                             edge_weights[(parent_service, child_service)] = {"count": 1, "latencies": [duration]}
 
-    # Assign weights to graph edges based on the chosen wedge_weight_type
-    graph = assign_edge_weights(wedge_weight_type, graph, edge_weights, execution_sets)
+    # Assign weights to graph edges based on the chosen edge_weight_type
+    graph = assign_edge_weights(edge_weight_type, graph, edge_weights, execution_sets)
 
     # Calculate node weights and add nodes to the graph
     nodes = calculate_node_weights(graph)
@@ -73,7 +73,7 @@ def calculate_node_weights(graph):
         }
     return nodes
 
-def assign_edge_weights(wedge_weight_type, graph, edge_weights, execution_sets):
+def assign_edge_weights(edge_weight_type, graph, edge_weights, execution_sets):
     """
     Assigns weights to the edges of a graph based on the specified weight type.
 
@@ -88,11 +88,11 @@ def assign_edge_weights(wedge_weight_type, graph, edge_weights, execution_sets):
         co_execution_weight = compute_jaccard_similarity(execution_sets, source, destination)
 
         # Assign edge weights
-        if wedge_weight_type == WEIGHT_TYPES.Frequency.value:
+        if edge_weight_type == WEIGHT_TYPES.Frequency.value:
             graph.add_edge(source, destination, weight=data["count"])
-        elif wedge_weight_type == WEIGHT_TYPES.Latency.value:
+        elif edge_weight_type == WEIGHT_TYPES.Latency.value:
             graph.add_edge(source, destination, weight=avg_latency)
-        elif wedge_weight_type == WEIGHT_TYPES.CoExecution.value:
+        elif edge_weight_type == WEIGHT_TYPES.CoExecution.value:
             graph.add_edge(source, destination, weight=co_execution_weight)
 
         # Store additional attributes
