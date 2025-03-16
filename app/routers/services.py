@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.services.db_service import get_active_services_of_jaeger
+from app.services import fetch_services
 from app.services.graph_processor import fetch_unique_services_from_neo4j
 
 router = APIRouter()
@@ -8,7 +8,7 @@ router = APIRouter()
 
 @router.get("/active")
 async def get_active_services():
-    services = get_active_services_of_jaeger()
+    services = fetch_services()
     return {"status": "success", "services": services}
 
 @router.get("/recorded")

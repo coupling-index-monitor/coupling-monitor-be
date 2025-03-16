@@ -1,4 +1,6 @@
-from app.services import fetch_services
+from datetime import datetime
+from neo4j import GraphDatabase
+import json
+from app.core.database import db_manager
 
-def get_active_services_of_jaeger():
-    return fetch_services()
+driver = db_manager.neo4j_driver

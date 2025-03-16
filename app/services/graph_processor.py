@@ -1,99 +1,7 @@
+from datetime import datetime
 import networkx as nx
 from networkx.readwrite import json_graph
 from app.core.database import db_manager
-
-def generate_weighted_graph(traces, weight_type="frequency"):
-    """
-    Generate a weighted dependency graph from new traces.
-    """
-    graph = nx.DiGraph()
-    edge_weights = {}
-
-    for trace in traces:
-        processes = trace.get("processes", {})
-        spans = trace.get("spans", [])
-
-        # Map process IDs to service names
-        process_to_service = {pid: details["serviceName"] for pid, details in processes.items()}
-
-        # Process spans to build relationships
-        for span in spans:
-            process_id = span.get("processID")
-            duration = span.get("duration", 0) / 1_000
-            parent_span_id = None
-            for ref in span.get("references", []):
-                if ref["refType"] == "CHILD_OF":
-                    parent_span_id = ref["spanID"]
-                    break
-
-            child_service = None
-            parent_service = None
-            if (parent_span_id) and (process_id in process_to_service):
-                child_service = process_to_service[process_id]
-                parent_span = next((s for s in spans if s["spanID"] == parent_span_id), None)
-                if (parent_span) and (parent_span["processID"] in process_to_service):
-                    parent_service = process_to_service[parent_span["processID"]]
-
-                    # Skip self-loops
-                    if parent_service != child_service:
-                        if (parent_service, child_service) in edge_weights:
-                            edge_weights[(parent_service, child_service)]["count"] += 1
-                            edge_weights[(parent_service, child_service)]["latencies"].append(duration)
-                        else:
-                            edge_weights[(parent_service, child_service)] = {"count": 1, "latencies": [duration]}
-
-    # Assign weights to graph edges based on the chosen weight_type
-    for (source, destination), data in edge_weights.items():
-        avg_latency = sum(data["latencies"]) / len(data["latencies"])
-        if weight_type == "frequency":
-            graph.add_edge(source, destination, weight=data["count"])
-        elif weight_type == "latency":
-            graph.add_edge(source, destination, weight=avg_latency)
-        graph[source][destination]["latency"] = avg_latency  # Store avg latency as an additional attribute
-        graph[source][destination]["frequency"] = data["count"]  # Store count as an additional attribute
-
-
-    return json_graph.node_link_data(graph, edges="edges")
-
-
-def generate_flat_graph_from_traces(traces):
-    """
-    Generate a weighted dependency graph from new traces.
-    """
-    graph = nx.DiGraph()
-
-    for trace in traces:
-        processes = trace.get("processes", {})
-        spans = trace.get("spans", [])
-
-        # Map process IDs to service names
-        process_to_service = {pid: details["serviceName"] for pid, details in processes.items()}
-
-        # Process spans to build relationships
-        for span in spans:
-            process_id = span.get("processID")
-            parent_span_id = None
-            for ref in span.get("references", []):
-                if ref["refType"] == "CHILD_OF":
-                    parent_span_id = ref["spanID"]
-                    break
-
-            if parent_span_id and process_id in process_to_service:
-                child_service = process_to_service[process_id]
-                parent_span = next((s for s in spans if s["spanID"] == parent_span_id), None)
-                if parent_span and parent_span["processID"] in process_to_service:
-                    parent_service = process_to_service[parent_span["processID"]]
-
-                    # Skip self-loops
-                    if parent_service != child_service:
-                        # Update graph with weight
-                        if graph.has_edge(parent_service, child_service):
-                            graph[parent_service][child_service]["weight"] += 1
-                        else:
-                            graph.add_edge(parent_service, child_service, weight=1)
-
-    return graph
-
 
 def update_graph_in_neo4j(graph):
     """
@@ -101,17 +9,14 @@ def update_graph_in_neo4j(graph):
     """
     with db_manager.neo4j_driver.session() as session:
         for edge in graph.edges(data=True):
-            parent, child, attributes = edge
-            weight = attributes.get("weight", 1)
+            parent, child = edge
 
             # Create or update nodes and relationships in Neo4j
             session.run("""
                 MERGE (a:Service {name: $parent})
                 MERGE (b:Service {name: $child})
                 MERGE (a)-[r:CALLS]->(b)
-                ON CREATE SET r.weight = $weight
-                ON MATCH SET r.weight = r.weight + $weight
-            """, parent=parent, child=child, weight=weight)
+            """, parent=parent, child=child)
 
 
 def fetch_graph_from_neo4j():
@@ -124,14 +29,10 @@ def fetch_graph_from_neo4j():
         with db_manager.neo4j_driver.session() as session:
             result = session.run("""
                 MATCH (a:Service)-[r:CALLS]->(b:Service)
-                RETURN a.name AS parent, b.name AS child, r.weight AS weight
+                RETURN a.name AS parent, b.name AS child
             """)
-
             for record in result:
-                parent = record["parent"]
-                child = record["child"]
-                weight = record["weight"]
-                graph.add_edge(parent, child, weight=weight)
+                graph.add_edge(record["parent"], record["child"])
 
     except Exception as e:
         print(f"Error fetching graph from Neo4j: {e}")
@@ -162,3 +63,85 @@ def get_graph_data_as_json():
     """
     graph = fetch_graph_from_neo4j()
     return json_graph.node_link_data(graph)
+
+
+def save_graph_to_neo4j(graph_data, graph_id):
+    """Saves multiple graphs in Neo4j using graph_id (timestamp/version)."""
+    if graph_id is None:
+        graph_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    with db_manager.neo4j_driver.session() as session:
+        for node in graph_data["data"]["nodes"]:
+            session.run(
+                """
+                MERGE (s:Service {id: $id, graph_id: $graph_id})
+                SET s.absolute_importance = $absolute_importance,
+                    s.absolute_dependence = $absolute_dependence,
+                    s.last_updated = datetime()
+                """,
+                id=node["id"],
+                graph_id=graph_id,
+                absolute_importance=node["absolute_importance"],
+                absolute_dependence=node["absolute_dependence"]
+            )
+
+        # Insert Edges with graph_id
+        for edge in graph_data["data"]["edges"]:
+            session.run(
+                """
+                MATCH (source:Service {id: $source, graph_id: $graph_id}), 
+                      (target:Service {id: $target, graph_id: $graph_id})
+                MERGE (source)-[r:CALLS {graph_id: $graph_id}]->(target)
+                SET r.latency = $latency,
+                    r.frequency = $frequency,
+                    r.co_execution = $co_execution
+                """,
+                source=edge["source"],
+                target=edge["target"],
+                graph_id=graph_id,
+                latency=edge["latency(ms)"],
+                frequency=edge["frequency"],
+                co_execution=edge["co_execution"]
+            )
+
+    print(f"Graph {graph_id} saved to Neo4j successfully.")
+    return graph_id
+
+def retrieve_graph_by_id(id):
+    """Retrieves a specific graph snapshot using graph_id."""
+    
+    print(f"Retrieving graph with graph_id: {id}")
+    with db_manager.neo4j_driver.session() as session:
+        # Retrieve Nodes
+        nodes_result = session.run(
+            "MATCH (s:Service) WHERE s.graph_id = $graph_id RETURN s.id AS id, s.absolute_importance AS ai, s.absolute_dependence AS ad",
+            graph_id=int(id)
+        )
+        nodes = [{
+            "id": record["id"], 
+            "absolute_importance": record["ai"], 
+            "absolute_dependence": record["ad"]
+        } for record in nodes_result]
+
+        # Retrieve Edges
+        edges_result = session.run(
+            "MATCH (s1:Service)-[r:CALLS {graph_id: $graph_id}]->(s2:Service) RETURN s1.id AS from, s2.id AS to, r.latency AS latency, r.frequency AS frequency, r.co_execution AS co_execution",
+            graph_id=int(id)
+        )
+        edges = [{
+            "source": record["from"], 
+            "target": record["to"],
+            "latency": record["latency"], 
+            "frequency": record["frequency"], 
+            "co_execution": record["co_execution"]
+        } for record in edges_result]
+
+    return {"nodes": nodes, "edges": edges}
+
+def get_all_graph_versions():
+    """Retrieves all stored graph versions (graph_ids)."""
+    with db_manager.neo4j_driver.session() as session:
+        result = session.run("MATCH (s:Service) RETURN DISTINCT s.graph_id AS graph_id")
+        graph_versions = [record["graph_id"] for record in result]
+
+    return graph_versions

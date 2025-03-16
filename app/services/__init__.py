@@ -12,11 +12,12 @@ from app.services.coupling_metrics_calculator import (
     calculate_for_all_services
 )
 from app.services.weighted_graph import generate_graph_with_edge_weights
-from app.services.graph_processor import (
-    generate_flat_graph_from_traces, 
+from app.services.graph_processor import ( 
     update_graph_in_neo4j, 
     get_graph_data_as_json, 
-    generate_weighted_graph
+    save_graph_to_neo4j,
+    retrieve_graph_by_id,
+    get_all_graph_versions
 )
 
 __all__ = [
@@ -33,6 +34,9 @@ __all__ = [
     "calculate_all_ads",
     calculate_adcs,
     calculate_scf,
-    calculate_for_all_services
+    calculate_for_all_services,
+    save_graph_to_neo4j,
+    retrieve_graph_by_id,
+    get_all_graph_versions
 ]
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from datetime import datetime, timedelta
 
 from fastapi.responses import JSONResponse
@@ -6,12 +6,15 @@ from app.services import (
     generate_graph_with_edge_weights, 
     get_traces_from_files_within_timerange, 
     get_graph_data_as_json,
+    save_graph_to_neo4j,
+    retrieve_graph_by_id,
+    get_all_graph_versions,
 )
 from app.utils import WEIGHT_TYPES, get_gap_time_str
 
 router = APIRouter()
 
-@router.get("/edge-weight")
+@router.get("/weight")
 async def get_weighted_dependency_graph_from_files(weight_type: str = "CO", start_time: int = 0, end_time: int = 0):
     """
     Endpoint to generate and return the weighted dependency graph from the traces of a given time range.
@@ -73,4 +76,37 @@ async def fetch_dependency_graph():
     except Exception as e:
         return {"status": "error", "message": f"Failed to fetch graph: {str(e)}"}
 
-
+@router.post("/save")
+async def save_graph(request: Request):
+    """
+    Endpoint to save the dependency graph to Neo4j.
+    """
+    try:
+        data = await request.json()
+        id = save_graph_to_neo4j(data["graph_data"], data["graph_id"])
+        return {"status": "success", "message": "Graph saved successfully.", "graph_id": id}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to save graph: {str(e)}"}
+    
+@router.get("/retrieve")
+async def retrieve_graph(graph_id = None):
+    """
+    Endpoint to retrieve the dependency graph from Neo4j.
+    """
+    try:
+        graph_data = retrieve_graph_by_id(graph_id)
+        print(f"Retrieved graph with {len(graph_data['nodes'])} nodes")
+        return {"status": "success", "graph": graph_data}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to retrieve graph: {str(e)}"}
+    
+@router.get("/versions")
+async def get_graph_versions():
+    """
+    Endpoint to fetch all versions of the dependency graph from Neo4j.
+    """
+    try:
+        graph_versions = get_all_graph_versions()
+        return {"status": "success", "versions": graph_versions}
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to fetch graph versions: {str(e)}"}
