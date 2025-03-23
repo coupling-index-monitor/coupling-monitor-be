@@ -1,4 +1,3 @@
-from datetime import datetime
 import networkx as nx
 from networkx.readwrite import json_graph
 from app.core.database import db_manager
@@ -146,6 +145,6 @@ def get_all_graph_versions():
     """Retrieves all stored graph versions (graph_ids)."""
     with db_manager.neo4j_driver.session() as session:
         result = session.run("MATCH (s:Service) RETURN DISTINCT s.graph_id AS graph_id")
-        graph_versions = [record["graph_id"] for record in result]
+        graph_versions = sorted([record["graph_id"] for record in result], reverse=True)
 
     return graph_versions

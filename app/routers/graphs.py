@@ -8,8 +8,7 @@ from app.services import (
     get_graph_data_as_json,
     save_graph_to_neo4j,
     retrieve_graph_by_id,
-    get_all_graph_versions,
-    get_change_points
+    get_all_graph_versions
 )
 from app.utils import WEIGHT_TYPES, get_gap_time_str
 
@@ -33,7 +32,7 @@ async def get_weighted_dependency_graph_from_files(weight_type: str = "CO", star
                 "message": "Invalid time range. start_time must be less than end_time."
             })
         if start_time == 0:
-            start_time = int((datetime.now() - timedelta(hours=24)).timestamp() * 1_000_000)
+            start_time = int((datetime.now() - timedelta(minutes=15)).timestamp() * 1_000_000)
         if end_time == 0:
             end_time = int(datetime.now().timestamp() * 1_000_000)
             
