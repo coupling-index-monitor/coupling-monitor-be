@@ -23,6 +23,6 @@ def get_metrics_within_time_range(start_time, end_time):
     metric_col: Collection = db_manager.get_metrics_collection()
     
     metrics = list(metric_col.find(query, {"_id": 0}))
-    print(f"Retrieved {len(metrics)} traces.")
+    print(f"Retrieved {len(metrics)} records.")
 
     return metrics

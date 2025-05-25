@@ -14,11 +14,7 @@ async def get_change_points(start_time: int, end_time: int, metric: str):
     """
     try:
         response = handle_detect_change_points(start_time, end_time, metric)
-        return JSONResponse(status_code=200, content={
-            "status": "success", 
-            "message": "Weighted Dependency graph generated successfully.", 
-            "data": response
-        })
+        return response
     except Exception as e:
         print(f"ERROR: Failed to generate weighted graph: {str(e)}")
         return JSONResponse(status_code=500, content={"status": "error", "message": f"Failed to generate graph: {str(e)}"})
