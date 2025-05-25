@@ -2,7 +2,7 @@ from datetime import datetime
 from pymongo.collection import Collection
 from app.core.database import db_manager
 
-def get_metrics_within_time_range(start_time, end_time, type):
+def get_metrics_within_time_range(start_time, end_time):
     """
     Fetch data from a MongoDB collection within the given time range.
     """
@@ -22,13 +22,7 @@ def get_metrics_within_time_range(start_time, end_time, type):
     }
     metric_col: Collection = db_manager.get_metrics_collection()
     
-    metrics = list(metric_col.find({}, {"_id": 0}))
-    if type == "nodes":
-        metrics = [metric["data"]["nodes"] for metric in metrics]
-    elif type == "edges":
-        metrics = [metric["data"]["edges"] for metric in metrics]
-    else:
-        raise ValueError("Invalid type specified. Must be 'nodes' or 'edges'.")
+    metrics = list(metric_col.find(query, {"_id": 0}))
     print(f"Retrieved {len(metrics)} traces.")
 
     return metrics

@@ -20,7 +20,7 @@ from app.services.graph_processor import (
     get_all_graph_versions
 )
 
-from app.services.change_point_analyser import detect_change_points
+from app.services.change_point_analyser import handle_detect_change_points
 
 __all__ = [
     "fetch_services", 
@@ -40,6 +40,6 @@ __all__ = [
     save_graph_to_neo4j,
     retrieve_graph_by_id,
     get_all_graph_versions,
-    detect_change_points
+    handle_detect_change_points
 ]
 
