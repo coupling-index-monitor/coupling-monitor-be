@@ -111,7 +111,7 @@ def build_response(df: pd.DataFrame, metric: str, bkps: List[int]) -> Dict[str, 
 
 def get_nodes(raw):
     """
-    Extracts and concatenates all 'nodes' lists from the raw response.
+    Extracts and concatenates all 'nodes' lists from the raw response, removing duplicates.
     
     Parameters
     ----------
@@ -121,11 +121,16 @@ def get_nodes(raw):
     Returns
     -------
     list of dict
-        All node dicts flattened into one list.
+        All unique node dicts flattened into one list.
     """
     nodes = []
+    seen = set()
     for entry in raw:
-        nodes.extend(entry.get("data", {}).get("nodes", []))
+        for node in entry.get("data", {}).get("nodes", []):
+            node_id = node.get("id")
+            if node_id not in seen:
+                nodes.append(node)
+                seen.add(node_id)
     return nodes
 
 def get_all_edges(
